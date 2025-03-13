@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escolha das Eletivas</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="tableContainer">
+            <h1>Escolha das Eletivas</h1>
+            <form id="eletivas-form">
+                <div class="form-group">
+                    <label for="turma">Turma:</label>
+                    <select id="turma" name="turma" required>
+                        <option value="">Selecione sua turma</option>
+                        <option value="1I01">1ºI01</option>
+                        <option value="1I02">1ºI02</option>
+                        <option value="1I03">1ºI03</option>
+                        <option value="1I04">1ºI04</option>
+                        <option value="1I05">1ºI05</option>
+                        <option value="1I06">1ºI06</option>
+                        <option value="2I01">2ºI01</option>
+                        <option value="2I02">2ºI02</option>
+                        <option value="2I03">2ºI03</option>
+                        <option value="2I04">2ºI04</option>
+                        <option value="2I05">2ºI05</option>
+                        <option value="2I06">2ºI06</option>
+                        <option value="3I01">3ºI01</option>
+                    </select>
+                </div>
+    
+                <div class="form-group">
+                    <label for="nome">Nome do Aluno:</label>
+                    <input type="text" id="nome" name="nome" placeholder="Digite seu nome" required>
+                </div>
+    
+                <div class="form-group">
+                    <label for="eletiva">Escolha sua eletiva:</label>
+                    <select id="eletiva" name="eletiva" required>
+                        <option value="">Selecione uma eletiva</option>
+                    </select>
+                </div>
+    
+                <button type="submit">Enviar</button>
+            </form>
+            <p id="mensagem" style="display: none;"></p>    
+        </div>
+        <!-- Tabela de Eletivas -->
+        <h2>Vagas Disponíveis</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Eletiva</th>
+                    <th>Professor</th>
+                    <th>Vagas</th>
+                </tr>
+            </thead>
+            <tbody id="eletivas-lista">
+                <!-- Os dados serão inseridos dinamicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="/js/script.js"></script>
+</body>
+</html>

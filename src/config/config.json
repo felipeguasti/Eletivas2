@@ -1,0 +1,24 @@
+{
+    "development": {
+      "username": "u612973268_broadcast",
+      "password": "E1=iTrLXsvk",
+      "database": "u612973268_broadcast",
+      "host": "localhost",
+      "dialect": "mysql"
+    },
+    "test": {
+      "username": "u612973268_broadcast",
+      "password": "E1=iTrLXsvk",
+      "database": "u612973268_broadcast_test",
+      "host": "localhost",
+      "dialect": "mysql"
+    },
+    "production": {
+      "username": "u612973268_broadcast",
+      "password": "E1=iTrLXsvk",
+      "database": "u612973268_broadcast_prod",
+      "host": "localhost",
+      "dialect": "mysql"
+    }
+  }
+  
