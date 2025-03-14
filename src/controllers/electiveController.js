@@ -122,3 +122,45 @@ exports.buscarEletivas = async (req, res) => {
         res.status(500).json({ error: "Erro ao buscar eletivas" });
     }
 };
+
+exports.resultadoEletiva = async (req, res) => {
+    try {
+        // Busca os alunos cujas eletivas não são nulas e organiza por eletivaId e nome
+        const alunosComEletiva = await Estudante.findAll({
+            where: {
+                eletivaId: { [Op.ne]: null }
+            },
+            order: [
+                ['eletivaId', 'ASC'],  // Ordena por eletivaId
+                ['nome', 'ASC']        // E depois por nome
+            ]
+        });
+
+        // Enrich alunosComEletiva com os nomes das eletivas
+        for (let aluno of alunosComEletiva) {
+            const eletiva = await Eletiva.findByPk(aluno.eletivaId);
+            aluno.dataValues.eletivaNome = eletiva ? eletiva.nome : 'Eletiva não encontrada';  // Atribui o nome da eletiva
+        }
+
+        // Busca os alunos cujas eletivas são nulas e organiza por turma
+        const alunosSemEletiva = await Estudante.findAll({
+            where: {
+                eletivaId: null
+            },
+            order: [
+                ['turma', 'ASC'],  // Ordena por turma
+                ['nome', 'ASC']    // E depois por nome
+            ]
+        });
+
+        // Retorna a resposta com os alunos
+        res.json({
+            alunosComEletiva,
+            alunosSemEletiva
+        });
+
+    } catch (error) {
+        console.error("Erro ao buscar resultado das eletivas:", error);
+        res.status(500).json({ message: "Erro ao buscar resultado das eletivas." });
+    }
+};

@@ -2,8 +2,13 @@ const fs = require("fs");
 const readline = require("readline");
 const axios = require("axios");
 
-const BASE_URL = "http://localhost:3000/eletivas/escolha"; // Ajuste conforme necessário
+const BASE_URL = "https://eletivas.glitch.me/eletivas/escolha"; // Novo URL
 const CSV_FILE = "estudantes.csv"; // Nome do arquivo CSV
+
+// Função para adicionar delay
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function processCSV() {
     const alunos = [];
@@ -26,25 +31,25 @@ async function processCSV() {
 
     console.log(`📋 Total de alunos no CSV: ${alunos.length}`);
 
-    // Distribuir alunos entre 14 eletivas, 36 alunos por eletiva
-    for (let i = 0; i < alunos.length; i++) {
-        const aluno = alunos[i];
-        const eletivaId = (Math.floor(i / 36) % 14) + 1; // Alterna entre 1 e 14, mantendo 36 por eletiva
+    // Criar requisições para cada aluno com delay entre elas
+    for (let index = 0; index < alunos.length; index++) {
+        const aluno = alunos[index];
+        const eletivaId = (Math.floor(index / 36) % 14) + 1; // Alterna entre 1 e 14, mantendo 36 por eletiva
 
         try {
-            const response = await axios.post(`${BASE_URL}/escolha`, {
+            // Enviar requisição
+            await axios.post(BASE_URL, {
                 eletivaId,
-                aluno: aluno.nome
+                nome: aluno.nome,
+                turma: aluno.turma
             });
-
             console.log(`✅ ${aluno.nome} (${aluno.turma}) -> Eletiva ${eletivaId}: Sucesso`);
         } catch (error) {
-            if (error.response) {
-                console.log(`❌ ${aluno.nome} (${aluno.turma}) -> Eletiva ${eletivaId}: Erro - ${error.response.data.mensagem}`);
-            } else {
-                console.log(`❌ ${aluno.nome} (${aluno.turma}) -> Eletiva ${eletivaId}: Erro desconhecido - ${error.message}`);
-            }
+            console.log(`❌ ${aluno.nome} (${aluno.turma}) -> Eletiva ${eletivaId}: Erro - ${error.response?.data?.mensagem || error.message}`);
         }
+
+        // Adiciona um delay de 1 segundo entre as requisições
+        await delay(400); // 1000 ms = 1 segundo
     }
 }
 
