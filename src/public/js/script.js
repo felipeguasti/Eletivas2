@@ -2,10 +2,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const isIndex = window.location.pathname === "/";
     const isResultado = window.location.pathname.includes("/resultado");
     if(isIndex){
-        console.log("Carregando scripts da página inicial...");
         const form = document.getElementById("eletivas-form");
         const mensagem = document.getElementById("mensagem");
         const eletivaSelect = document.getElementById("eletiva");
+        const comEscolhas = document.getElementById("comEscolhas");
+        const semEscolhas = document.getElementById("semEscolhas");
     
         // Função para carregar as eletivas dinamicamente
         async function carregarEletivas() {
@@ -97,11 +98,9 @@ document.addEventListener("DOMContentLoaded", function () {
         function atualizarEletivas() {
             fetch("/eletivas/buscar")
                 .then(response => {
-                    console.log("Resposta recebida:", response);
                     return response.json();
                 })
                 .then(data => {
-                    console.log("Dados recebidos:", data);
                     const tabela = document.getElementById("eletivas-lista");
                     tabela.innerHTML = "";
         
@@ -162,7 +161,6 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         
             function mostrarMensagem(texto, tipo) {
-                console.log("mensagem");
                 mensagem.textContent = texto;
                 mensagem.style.display = "block";
                 mensagem.style.color = tipo === "success" ? "green" : "red";
@@ -181,41 +179,64 @@ document.addEventListener("DOMContentLoaded", function () {
     if (isResultado) {
         const select = document.getElementById("eletiva-select");
         const tableContainer = document.getElementById("table-container");
-
+    
         select.addEventListener("change", () => {
             const selectedEletiva = select.value;
             fetchResultadoEletiva(selectedEletiva);
-            console.log(selectedEletiva);
         });
+    
+        // Função para verificar e usar o Cache API
+        async function fetchResultadoEletiva(selectedEletiva) {
+            const timestampCliente = localStorage.getItem('timestamp');
+            const timestampAtual = Date.now();
+            showLoading();
 
-        async function fetchResultadoEletiva(selectedEletiva) { 
             try {
-                const response = await fetch('/eletivas/resultado');
-                const data = await response.json();
+                const cache = await caches.open('resultadoEletivaCache');
+                const cachedResponse = await cache.match('resultadoEletiva');
+                const shouldFetchNewData = !cachedResponse || (timestampCliente && timestampAtual - timestampCliente > 3600000); // 1 hora de validade
+
+                let data;
                 
-                console.log("Dados recebidos:", data); // Exibe o conteúdo completo de 'data'
-        
+                if (shouldFetchNewData) {
+                    // Se os dados estiverem desatualizados ou não existirem no cache, busca do servidor
+                    const response = await fetch('/eletivas/resultado');
+                    data = await response.json();
+
+                    // Atualizar o cache com os novos dados e o timestamp
+                    cache.put('resultadoEletiva', new Response(JSON.stringify(data)));
+                    localStorage.setItem('timestamp', Date.now());
+                } else {
+                    // Usando dados do cache
+                    data = await cachedResponse.json();
+                }
+
+                // Atualiza o HTML com os valores
+                const qtdComEletiva = data.alunosComEletiva.length;
+                const qtdSemEletiva = data.alunosSemEletiva.length;
+
+                document.getElementById("alunosComEletiva").innerHTML = `Alunos com eletiva: ${qtdComEletiva}`;
+                document.getElementById("alunosSemEletiva").innerHTML = `Alunos sem eletiva: ${qtdSemEletiva}`;
+
                 // Unindo as listas de alunos
                 const alunos = [...data.alunosComEletiva, ...data.alunosSemEletiva];
-                        
+
                 // Filtrando apenas os alunos que possuem a eletiva selecionada
                 const alunosFiltrados = selectedEletiva
-                    ? alunos.filter(aluno => aluno.eletivaNome === selectedEletiva) // Verifique o nome da chave 'eletivaNome'
+                    ? alunos.filter(aluno => aluno.eletivaNome === selectedEletiva)
                     : alunos;
-        
-                console.log("Alunos filtrados:", alunosFiltrados); // Verifica o resultado da filtragem
-        
-                tableContainer.innerHTML = ''; // Limpa o conteúdo anterior
-        
+
+                // Limpar o conteúdo anterior da tabela
+                tableContainer.innerHTML = '';
                 if (!alunosFiltrados.length) {
                     tableContainer.innerHTML = '<p>Nenhum aluno encontrado.</p>';
                     return;
                 }
-        
+
                 // Criar a tabela
                 const table = document.createElement('table');
                 table.classList.add('styled-table');
-        
+
                 // Criar o cabeçalho da tabela
                 const thead = document.createElement('thead');
                 thead.innerHTML = `
@@ -226,7 +247,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     </tr>
                 `;
                 table.appendChild(thead);
-        
+
                 // Criar o corpo da tabela
                 const tbody = document.createElement('tbody');
                 alunosFiltrados.forEach(aluno => {
@@ -239,15 +260,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     tbody.appendChild(tr);
                 });
                 table.appendChild(tbody);
-        
+
+                // Adicionando a tabela ao container
                 tableContainer.appendChild(table);
+
             } catch (error) {
                 console.error('Erro ao carregar os dados:', error);
                 tableContainer.innerHTML = '<p>Erro ao carregar os dados.</p>';
+            } finally {
+                hideLoading();  // Esconde a tela de loading quando o processo for concluído (seja com sucesso ou erro)
             }
         }
-        
-    
         async function fetchEletivas() {
             try {
                 const response = await fetch('/eletivas/buscar');
@@ -263,8 +286,32 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.error("Erro ao buscar as eletivas:", error);
             }
         }
-    
+        fetchResultadoEletiva();
         fetchEletivas();
     }
-      
 });
+
+function showLoading() {
+    const popup = document.getElementById("generic-popup");
+    const messageContainer = popup.querySelector(".popup-message");
+    const okButton = popup.querySelector(".popup-ok-button");
+    messageContainer.textContent = "Carregando...";
+    okButton.style.display = "none";
+    popup.classList.remove("hidden");
+}
+// Função para ocultar o carregamento
+function hideLoading() {
+    const popup = document.getElementById("generic-popup");
+    popup.classList.add("hidden");  // Oculta o popup (esconde o "Carregando...")
+}
+function hideLoadingWithMessage(message, callback = null) {
+    const popup = document.getElementById("generic-popup");
+    const messageContainer = popup.querySelector(".popup-message");
+    const okButton = popup.querySelector(".popup-ok-button");
+    messageContainer.textContent = message;
+    okButton.style.display = "inline-block";
+    okButton.onclick = () => {
+        popup.classList.add("hidden");
+        if (callback) callback();
+    };
+}

@@ -1,5 +1,6 @@
 const Estudante = require('../models/Estudante');
 const Eletiva = require('../models/Eletiva');
+const CacheTimestamp = require('../models/CacheTimestamp');
 const db = require('../config/db'); 
 const { Op } = require("sequelize");
 
@@ -84,24 +85,65 @@ exports.chooseElective = async (req, res) => {
 };
 
 
-
+// Controlador para buscar as eletivas
 exports.buscarEletivas = async (req, res) => {
     try {
-        // Buscando todas as eletivas com os dados necessários
-        const eletivas = await Eletiva.findAll({
-            attributes: ['id', 'nome', 'professor'], 
+        const timestampCache = 60 * 60 * 1000; // 1 hora em milissegundos
+        const lastFetchTime = await getLastFetchTime('eletivas'); // Passando 'eletivas' como parâmetro
+
+        const now = Date.now();
+
+        // Verifica se os dados precisam ser atualizados (se nunca foi feito o fetch ou o cache está expirado)
+        if (lastFetchTime === 0 || now - lastFetchTime > timestampCache) {
+            // Buscando todas as eletivas com os dados necessários
+            const eletivas = await Eletiva.findAll({
+                attributes: ['id', 'nome', 'professor'],
+                order: [['nome', 'ASC']],
+                include: [{
+                    model: Estudante,
+                    as: 'estudantes',
+                    attributes: []
+                }],
+                group: ['Eletiva.id'],
+                raw: true
+            });
+
+            // Contar os estudantes diretamente usando o count do Sequelize
+            const eletivasComVagas = await Promise.all(eletivas.map(async (eletiva) => {
+                const vagasOcupadas = await Estudante.count({
+                    where: { eletivaId: eletiva.id }
+                });
+                const vagasRestantes = 35 - vagasOcupadas; // Calcula as vagas restantes
+
+                return {
+                    id: eletiva.id,
+                    nome: eletiva.nome,
+                    professor: eletiva.professor,
+                    vagas: vagasRestantes
+                };
+            }));
+
+            // Atualiza o timestamp para o tempo atual
+            await setLastFetchTime('eletivas', now);  // Passando 'eletivas' como operação
+
+            return res.json(eletivasComVagas); // Retorna as eletivas com as vagas restantes
+        }
+
+        // Caso os dados estejam no cache e ainda sejam válidos, retorna os dados diretamente
+        const cachedEletivas = await Eletiva.findAll({
+            attributes: ['id', 'nome', 'professor'],
             order: [['nome', 'ASC']],
             include: [{
                 model: Estudante,
-                as: 'estudantes', 
-                attributes: [] 
+                as: 'estudantes',
+                attributes: []
             }],
-            group: ['Eletiva.id'], 
-            raw: true 
+            group: ['Eletiva.id'],
+            raw: true
         });
 
         // Contar os estudantes diretamente usando o count do Sequelize
-        const eletivasComVagas = await Promise.all(eletivas.map(async (eletiva) => {
+        const eletivasComVagasCache = await Promise.all(cachedEletivas.map(async (eletiva) => {
             const vagasOcupadas = await Estudante.count({
                 where: { eletivaId: eletiva.id }
             });
@@ -115,8 +157,8 @@ exports.buscarEletivas = async (req, res) => {
             };
         }));
 
-        // Envia os dados de eletivas com as vagas restantes e os professores para o frontend
-        res.json(eletivasComVagas);
+        return res.json(eletivasComVagasCache); // Retorna os dados cacheados
+
     } catch (error) {
         console.error("Erro ao buscar eletivas:", error);
         res.status(500).json({ error: "Erro ao buscar eletivas" });
@@ -125,38 +167,79 @@ exports.buscarEletivas = async (req, res) => {
 
 exports.resultadoEletiva = async (req, res) => {
     try {
-        // Busca os alunos cujas eletivas não são nulas e organiza por eletivaId e nome
-        const alunosComEletiva = await Estudante.findAll({
+        const timestampCache = 60 * 60 * 1000; // 1 hora em milissegundos
+        const lastFetchTime = await getLastFetchTime('resultadoEletiva'); // Passando 'resultadoEletiva' como parâmetro
+
+        const now = Date.now();
+
+        // Verifica se os dados precisam ser atualizados (se nunca foi feito o fetch ou o cache está expirado)
+        if (lastFetchTime === 0 || now - lastFetchTime > timestampCache) {
+            // Busca os dados atualizados no banco de dados
+            const alunosComEletiva = await Estudante.findAll({
+                where: {
+                    eletivaId: { [Op.ne]: null }
+                },
+                order: [
+                    ['eletivaId', 'ASC'],
+                    ['nome', 'ASC']
+                ]
+            });
+
+            // Enriquecendo alunosComEletiva com os nomes das eletivas
+            for (let aluno of alunosComEletiva) {
+                const eletiva = await Eletiva.findByPk(aluno.eletivaId);
+                aluno.dataValues.eletivaNome = eletiva ? eletiva.nome : 'Eletiva não encontrada';
+            }
+
+            const alunosSemEletiva = await Estudante.findAll({
+                where: {
+                    eletivaId: null
+                },
+                order: [
+                    ['turma', 'ASC'],
+                    ['nome', 'ASC']
+                ]
+            });
+
+            // Atualiza o timestamp para o tempo atual
+            await setLastFetchTime('resultadoEletiva', now);  // Passando 'resultadoEletiva' como operação
+
+            return res.json({
+                alunosComEletiva,
+                alunosSemEletiva
+            });
+        }
+
+        // Caso os dados estejam no cache e ainda sejam válidos, retorna os dados diretamente
+        const cachedAlunosComEletiva = await Estudante.findAll({
             where: {
                 eletivaId: { [Op.ne]: null }
             },
             order: [
-                ['eletivaId', 'ASC'],  // Ordena por eletivaId
-                ['nome', 'ASC']        // E depois por nome
+                ['eletivaId', 'ASC'],
+                ['nome', 'ASC']
             ]
         });
 
-        // Enrich alunosComEletiva com os nomes das eletivas
-        for (let aluno of alunosComEletiva) {
+        // Enriquecendo alunosComEletiva com os nomes das eletivas
+        for (let aluno of cachedAlunosComEletiva) {
             const eletiva = await Eletiva.findByPk(aluno.eletivaId);
-            aluno.dataValues.eletivaNome = eletiva ? eletiva.nome : 'Eletiva não encontrada';  // Atribui o nome da eletiva
+            aluno.dataValues.eletivaNome = eletiva ? eletiva.nome : 'Eletiva não encontrada';
         }
 
-        // Busca os alunos cujas eletivas são nulas e organiza por turma
-        const alunosSemEletiva = await Estudante.findAll({
+        const cachedAlunosSemEletiva = await Estudante.findAll({
             where: {
                 eletivaId: null
             },
             order: [
-                ['turma', 'ASC'],  // Ordena por turma
-                ['nome', 'ASC']    // E depois por nome
+                ['turma', 'ASC'],
+                ['nome', 'ASC']
             ]
         });
 
-        // Retorna a resposta com os alunos
-        res.json({
-            alunosComEletiva,
-            alunosSemEletiva
+        return res.json({
+            alunosComEletiva: cachedAlunosComEletiva,
+            alunosSemEletiva: cachedAlunosSemEletiva
         });
 
     } catch (error) {
@@ -164,3 +247,41 @@ exports.resultadoEletiva = async (req, res) => {
         res.status(500).json({ message: "Erro ao buscar resultado das eletivas." });
     }
 };
+
+
+// Função para obter o timestamp da última consulta no banco de dados
+async function getLastFetchTime(operation) {
+    try {
+        // Tenta buscar o timestamp da última consulta baseado na operação
+        const cache = await CacheTimestamp.findOne({
+            where: { operation } // Aqui utilizamos a operação passada como filtro
+        });
+
+        // Se não encontrar, retorna 0 ou um valor indicativo
+        return cache ? cache.timestamp : 0; // Retorna o timestamp ou 0 se não houver
+    } catch (error) {
+        console.error("Erro ao buscar o timestamp:", error);
+        return 0; // Retorna 0 em caso de erro
+    }
+}
+
+// Função para atualizar o timestamp da última consulta no banco de dados
+async function setLastFetchTime(operation, timestamp) {
+    try {
+        // Verifica se já existe um registro de timestamp para a operação específica
+        let cache = await CacheTimestamp.findOne({ where: { operation } });
+
+        if (cache) {
+            // Se o registro existir, atualiza o timestamp
+            cache.timestamp = timestamp;
+            await cache.save();
+        } else {
+            // Se não existir, cria um novo registro com a operação e o timestamp
+            await CacheTimestamp.create({ operation, timestamp });
+        }
+
+        console.log(`Timestamp atualizado para a operação ${operation}:`, timestamp);
+    } catch (error) {
+        console.error("Erro ao atualizar o timestamp:", error);
+    }
+}

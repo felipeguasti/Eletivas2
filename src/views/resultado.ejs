@@ -10,6 +10,10 @@
     <div class="container">
         <h1>Resultado das Eletivas</h1>
 
+        <div class="counters">
+            <div id="alunosComEletiva"></div>
+            <div id="alunosSemEletiva"></div>
+        </div>
         <div class="select-container">
             <select id="eletiva-select">
                 <option value="">Selecione uma eletiva</option>
@@ -21,7 +25,12 @@
                 </div>
         </div>        
     </div>
-
+    <div id="generic-popup" class="hidden popup-overlay">
+        <div class="popup-content">
+            <div class="popup-message"></div>
+            <button class="popup-ok-button">OK</button>
+        </div>
+    </div>
     <script src="/js/script.js"></script>
 </body>
 </html>

@@ -117,7 +117,219 @@ th:nth-child(2), td:nth-child(2) {
     width: 50%;
 }
 
+
+/* Estilos gerais para o popup */
+.popup {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 16px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+    z-index: 9999;
+}
+
+/* Estilo para mensagens de erro */
+.popup.error {
+    background-color: #f44336;
+}
+
+/* Estilo para mensagens de sucesso */
+.popup.success {
+    background-color: #4caf50;
+}
+
+/* Animação de fade-out */
+.popup.fade-out {
+    opacity: 0;
+}
+
+/* INÍCIO DO LAYOUT DO POPUP */
+/* Popup Overlay */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Conteúdo do Popup */
+.popup-content {
+background: #fff;
+padding: 20px;
+border-radius: 8px;
+text-align: center;
+max-width: 400px;
+width: 90%;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Mensagem do Popup */
+.popup-message {
+margin-bottom: 20px;
+font-size: 16px;
+}
+
+/* Botão OK */
+.popup-ok-button {
+padding: 10px 20px;
+background-color: #007BFF;
+color: white;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+}
+
+/* Botão ao passar o mouse */
+.popup-ok-button:hover {
+background-color: #0056b3;
+}
+
+/* Classe para esconder o popup */
+.hidden {
+display: none;
+}
+
+.button-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.eletiva-btn {
+    background-color: #007BFF;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.eletiva-btn:hover {
+    background-color: #0056b3;
+}
+
+.tables-container {
+    width: 100%;
+}
+
+.eletiva-table {
+    display: none;
+}
+
+.eletiva-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.eletiva-table th, .eletiva-table td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.eletiva-table th {
+    background-color: #007BFF;
+    color: white;
+
+}
+
+/* Dropdown centralizado e com 40% da largura */
+#eletiva-select {
+    width: 50%;
+    width: 40%; /* 40% da largura da tela */
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Responsividade para dispositivos menores */
 @media (max-width: 768px) {
+    .container {
+        width: 90%;
+        padding: 5px; /* Reduzi o padding */
+        padding: 15px;
+    }
+
+    .tableContainer {
+        padding: 5px; /* Reduzi o padding */
+        padding: 15px;
+    }
+
+    .eletivas-container {
+        width: 100%;
+    }
+
+    table {
+        font-size: 14px;
+    }
+
+    th, td {
+        padding: 5px; /* Reduzi o padding nas células */
+        padding: 6px;
+    }
+
+    th:nth-child(2), td:nth-child(2) {
+        width: 60px;
+    }
+
+    input, select, button {
+        font-size: 14px;
+        padding: 8px; /* Reduzi o padding */
+        padding: 10px;
+    }
+
+    #eletiva-select {
+        width: 80%;
+        width: 80%; /* Ajustado para telas menores */
+    }
+}
+
+@media (max-width: 480px) {
+    h1, h2 {
+        font-size: 1.2em;
+    }
+
+    th, td {
+        font-size: 12px;
+        padding: 4px; /* Ajustei o padding nas células para dispositivos móveis */
+        padding: 4px;
+    }
+
+    th:nth-child(2), td:nth-child(2) {
+        width: 50px;
+    }
+
+    input, select, button {
+        font-size: 12px;
+        padding: 8px;
+    }
+
+    #eletiva-select {
+        width: 90%;
+        width: 90%; /* Ajuste final para dispositivos móveis */
+    }
     .container {
         width: 90%;
         padding: 5px; /* Reduzi o padding */
