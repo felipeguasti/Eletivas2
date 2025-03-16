@@ -1,6 +1,6 @@
 const sequelize = require('./src/config/db');
-//const Eletiva = require('./src/models/Eletiva');
-//const Estudante = require('./src/models/Estudante');
+const Eletiva = require('./src/models/Eletiva');
+const Estudante = require('./src/models/Estudante');
 const CacheTimestamp = require('./src/models/CacheTimestamp');
 
 async function sincronizarModelos() {
